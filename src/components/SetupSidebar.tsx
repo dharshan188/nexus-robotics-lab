@@ -16,7 +16,7 @@ const SetupSidebar = ({ collapsed, onToggle, onInitialize }: SetupSidebarProps) 
 
   if (collapsed) {
     return (
-      <div className="w-12 glass-panel-strong border-r border-glass-border rounded-none flex flex-col items-center pt-4 shrink-0">
+      <div className="w-full xl:w-12 glass-panel-strong border-b xl:border-b-0 xl:border-r border-glass-border rounded-none flex flex-row xl:flex-col items-center justify-center xl:justify-start py-3 xl:pt-4 shrink-0">
         <button onClick={onToggle} className="w-8 h-8 rounded-lg bg-secondary/50 border border-glass-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition-all duration-300">
           <PanelLeft className="w-4 h-4" />
         </button>
@@ -25,7 +25,7 @@ const SetupSidebar = ({ collapsed, onToggle, onInitialize }: SetupSidebarProps) 
   }
 
   return (
-    <aside className="w-72 glass-panel-strong border-r border-glass-border rounded-none flex flex-col shrink-0 animate-fade-in">
+    <aside className="w-full xl:w-72 glass-panel-strong border-b xl:border-b-0 xl:border-r border-glass-border rounded-none flex flex-col shrink-0 animate-fade-in">
       <div className="flex items-center justify-between p-4 border-b border-glass-border">
         <h2 className="text-sm font-semibold text-foreground tracking-wide uppercase">Setup Configuration</h2>
         <button onClick={onToggle} className="w-7 h-7 rounded-md bg-secondary/50 border border-glass-border flex items-center justify-center text-muted-foreground hover:text-primary transition-all duration-300">

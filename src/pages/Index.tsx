@@ -6,24 +6,6 @@ import MainPanel from "@/components/MainPanel";
 import OutputPanel, { type LogEntry } from "@/components/OutputPanel";
 import ProgressBar from "@/components/ProgressBar";
 
-const simulatedLogs: { message: string; type: LogEntry["type"]; step: number }[] = [
-  { message: "Initializing workspace...", type: "info", step: 1 },
-  { message: "Parsing robot description...", type: "info", step: 1 },
-  { message: "Robot model generated successfully", type: "success", step: 1 },
-  { message: "Generating URDF model...", type: "info", step: 2 },
-  { message: "Building ROS2 workspace...", type: "info", step: 2 },
-  { message: "Compiling packages (3/3)...", type: "info", step: 2 },
-  { message: "Build completed with 0 errors", type: "success", step: 2 },
-  { message: "Launching Gazebo Ignition...", type: "info", step: 3 },
-  { message: "Loading world: custom_map.sdf", type: "info", step: 3 },
-  { message: "Spawning robot entity...", type: "info", step: 3 },
-  { message: "Simulation running at 1000Hz", type: "success", step: 3 },
-  { message: "Running auto-debug analysis...", type: "info", step: 4 },
-  { message: "Minor: TF tree has 2ms latency", type: "warning", step: 4 },
-  { message: "All systems nominal", type: "success", step: 4 },
-  { message: "Robot is operational ✓", type: "success", step: 5 },
-];
-
 const Index = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -50,27 +32,47 @@ const Index = () => {
     setDebugStatus("idle");
 
     toast("Generation started", { description: `Processing: "${prompt}"` });
+    addLog("Sending generation request to backend...", "info");
+    console.log("Sending:", prompt);
 
-    let prevStep = -1;
-    for (let i = 0; i < simulatedLogs.length; i++) {
-      const log = simulatedLogs[i];
-      await new Promise((r) => setTimeout(r, 400 + Math.random() * 600));
+    try {
+      setCurrentStep(1);
+      setBuildStatus("running");
 
-      if (log.step !== prevStep) {
-        setCurrentStep(log.step);
-        prevStep = log.step;
-        if (log.step === 2) setBuildStatus("running");
-        if (log.step === 3) { setBuildStatus("success"); setSimStatus("running"); }
-        if (log.step === 4) { setSimStatus("success"); setDebugStatus("running"); }
-        if (log.step === 5) { setDebugStatus("success"); }
+      const response = await fetch("http://127.0.0.1:8000/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      const data = await response.json();
+      console.log("Response:", data);
+
+      if (!response.ok) {
+        throw new Error(data?.detail || "Failed to generate robot");
       }
 
-      addLog(log.message, log.type);
+      setCurrentStep(5);
+      setBuildStatus("success");
+      setSimStatus("success");
+      setDebugStatus("success");
+      setSystemStatus("connected");
+      addLog("Gazebo launched", "success");
+      toast.success("Gazebo launched");
+    } catch (error) {
+      console.error("API error:", error);
+      const message = error instanceof Error ? error.message : "Unexpected API error";
+      setBuildStatus("error");
+      setSimStatus("error");
+      setDebugStatus("error");
+      setSystemStatus("error");
+      addLog(message, "error");
+      toast.error(message);
+    } finally {
+      setIsGenerating(false);
     }
-
-    setIsGenerating(false);
-    setSystemStatus("connected");
-    toast.success("Robot launched successfully!");
   }, [addLog]);
 
   const handleInitialize = () => {
@@ -80,7 +82,7 @@ const Index = () => {
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <Navbar status={systemStatus} />
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 flex-col xl:flex-row">
         <SetupSidebar
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}

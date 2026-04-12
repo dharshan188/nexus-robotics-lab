@@ -61,7 +61,7 @@ const OutputPanel = ({ logs, buildStatus, simStatus, debugStatus }: OutputPanelP
   }, [logs]);
 
   return (
-    <div className="w-80 glass-panel-strong border-l border-glass-border rounded-none flex flex-col shrink-0">
+    <div className="w-full xl:w-80 h-64 xl:h-auto glass-panel-strong border-t xl:border-t-0 xl:border-l border-glass-border rounded-none flex flex-col shrink-0">
       {/* Header */}
       <div className="flex items-center gap-2 p-4 border-b border-glass-border">
         <Terminal className="w-4 h-4 text-primary" />
