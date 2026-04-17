@@ -1,0 +1,8 @@
+{
+  "detection": {
+    "label": "person",
+    "confidence": 0.9,
+    "source": "yolo"
+  },
+  "detected_at": "2026-04-13T11:47:11.567612Z"
+}

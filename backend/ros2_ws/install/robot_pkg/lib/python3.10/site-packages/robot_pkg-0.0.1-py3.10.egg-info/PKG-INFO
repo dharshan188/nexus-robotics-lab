@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: robot_pkg
+Version: 0.0.1
+Summary: Generated ROS2 robot package
+Maintainer: dev
+Maintainer-email: dev@example.com
+License: Apache-2.0
+Requires-Dist: setuptools

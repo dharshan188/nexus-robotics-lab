@@ -1,0 +1,5 @@
+{
+  "model": "yolo",
+  "weights": "yolov8n.pt",
+  "confidence_threshold": 0.9
+}

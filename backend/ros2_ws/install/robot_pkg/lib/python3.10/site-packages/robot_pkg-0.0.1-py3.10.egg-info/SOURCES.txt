@@ -1,0 +1,14 @@
+package.xml
+setup.py
+../../build/robot_pkg/robot_pkg.egg-info/PKG-INFO
+../../build/robot_pkg/robot_pkg.egg-info/SOURCES.txt
+../../build/robot_pkg/robot_pkg.egg-info/dependency_links.txt
+../../build/robot_pkg/robot_pkg.egg-info/requires.txt
+../../build/robot_pkg/robot_pkg.egg-info/top_level.txt
+../../build/robot_pkg/robot_pkg.egg-info/zip-safe
+launch/simulation.launch.py
+resource/robot_pkg
+robot_pkg/__init__.py
+urdf/human.urdf
+urdf/robot.urdf
+worlds/empty.world

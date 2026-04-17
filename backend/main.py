@@ -1,19 +1,23 @@
-from typing import Any, Dict
-
+import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from llm import parse_prompt
-import subprocess
-import logging
+
+from pipeline_runner import run_pipeline
+from state import get_status, reset_status, update_status
+from validator_agent import ValidatorAgent
+from fix_agent import FixAgent
 
 
 logger = logging.getLogger("ai_copilot_backend")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logging.basicConfig(level=logging.INFO)
 
 
-app = FastAPI(title="AI Robotics Copilot", version="0.1")
+app = FastAPI(title="AI Robotics Copilot", version="1.0")
 
-# Enable CORS for all origins (development-friendly)
+
+# =========================
+# CORS
+# =========================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,59 +27,91 @@ app.add_middleware(
 )
 
 
+# =========================
+# STATUS ENDPOINT
+# =========================
+@app.get("/status")
+def status():
+    return get_status()
+
+
+# =========================
+# MAIN COPILOT ENGINE
+# =========================
 @app.post("/generate")
 async def generate(request: Request):
-    """Accept a JSON body with `prompt`, parse it via imported `parse_prompt`,
-    execute supported actions and return JSON responses. Entire handler is
-    defensive: it never allows uncaught exceptions to crash the server.
-    """
+
     try:
-        try:
-            body = await request.json()
-        except Exception:
-            logger.exception("Failed to parse request JSON")
-            return {"status": "error", "message": "Invalid JSON input"}
+        reset_status()
+        update_status("start", "System", "Pipeline request started")
 
+        body = await request.json()
         prompt = (body or {}).get("prompt", "")
-        print("🔥 API HIT")
-        print("Prompt received:", prompt)
 
-        # Use the parser from llm.py
-        parsed = parse_prompt(prompt)
-        print("Parsed output:", parsed)
+        print("\n🔥 PROMPT:", prompt)
 
-        action = parsed.get("action")
+        # =========================
+        # STEP 1: RUN PIPELINE
+        # =========================
+        context = run_pipeline(prompt)
 
-        if action == "open_gazebo":
-            print("Launching Gazebo...")
-            try:
-                subprocess.Popen(
-                    ["bash", "-c", "source /opt/ros/humble/setup.bash && gazebo"],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
-            except FileNotFoundError:
-                logger.exception("Gazebo launch failed: executable not found")
-                return {"status": "error", "message": "Gazebo not installed or ROS2 not sourced"}
-            except Exception as e:
-                logger.exception("Unexpected error launching Gazebo: %s", e)
-                return {"status": "error", "message": str(e)}
+        # =========================
+        # STEP 2: VALIDATION LOOP
+        # =========================
+        validator = ValidatorAgent()
+        fixer = FixAgent()
 
-            return {"status": "success", "message": "Gazebo launched"}
+        max_retries = 2
 
-        elif action == "generate_robot":
-            return {"status": "success", "data": parsed}
+        for attempt in range(max_retries):
 
-        else:
-            return {"status": "error", "message": "Unknown command"}
+            validation = validator.validate()
+            print("Validation:", validation)
+
+            if validation.get("status") == "ok":
+                update_status("success", "System", "Copilot completed successfully")
+                return {
+                    "status": "success",
+                    "context": context,
+                }
+
+            # 🚨 AUTO FIX
+            update_status(
+                "fixing",
+                "FixAgent",
+                f"Fix attempt {attempt + 1}",
+                error=validation.get("reason"),
+            )
+
+            context["error"] = validation.get("reason")
+            context = fixer.fix(context)
+
+        # =========================
+        # FINAL FAILURE
+        # =========================
+        update_status("failure", "System", "Copilot failed after retries")
+
+        return {
+            "status": "error",
+            "context": context,
+            "reason": "Auto-fix failed",
+        }
 
     except Exception as e:
-        logger.exception("Unhandled error in /generate: %s", e)
-        return {"status": "error", "message": str(e)}
+        logger.exception("Unhandled error")
+
+        update_status("failure", "System", "Unhandled error", error=str(e))
+
+        return {
+            "status": "error",
+            "message": str(e),
+        }
 
 
+# =========================
+# RUN SERVER
+# =========================
 if __name__ == "__main__":
     import uvicorn
 
-    logger.info("Starting AI Robotics Copilot backend (development server)")
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,0 +1,8 @@
+{
+  "robot": {
+    "type": "drone",
+    "locomotion": "rotors",
+    "rotor_count": 4
+  },
+  "generated_at": "2026-04-13T11:47:11.295561Z"
+}

@@ -1,0 +1,8 @@
+{
+  "robot": {
+    "type": "ground_robot",
+    "locomotion": "wheels",
+    "wheel_count": 4
+  },
+  "generated_at": "2026-04-13T11:47:11.293359Z"
+}
